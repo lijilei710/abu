@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-from collections import Iterable
+from collections.abc import Iterable
 
 import pandas as pd
 
@@ -45,12 +45,12 @@ def _benchmark(df, benchmark, symbol):
     :param symbol: Symbol对象
     :return: 使用基准的时间范围切割返回的金融时间序列
     """
-    if len(df.index & benchmark.kl_pd.index) <= 0:
+    if len(df.index.intersection(benchmark.kl_pd.index)) <= 0:
         # 如果基准benchmark时间范围和输入的df没有交集，直接返回None
         return None
 
-    # 两个金融时间序列通过loc寻找交集
-    kl_pd = df.loc[benchmark.kl_pd.index]
+    # 两个金融时间序列通过reindex对齐，避免KeyError
+    kl_pd = df.reindex(benchmark.kl_pd.index)
     # nan的date个数即为不相交的个数
     nan_cnt = kl_pd['date'].isnull().value_counts()
     # 两个金融序列是否相同的结束日期
@@ -72,7 +72,7 @@ def _benchmark(df, benchmark, symbol):
         base_keep_div *= 0.7
 
     if nan_cnt.index.shape[0] > 0 and nan_cnt.index.tolist().count(True) > 0 \
-            and nan_cnt.loc[True] > benchmark.kl_pd.shape[0] / base_keep_div:
+            and nan_cnt.get(True, 0) > benchmark.kl_pd.shape[0] / base_keep_div:
         # nan 个数 > 基准base_keep_div分之一放弃
         return None
 
@@ -361,7 +361,7 @@ def combine_pre_kl_pd(kl_pd, n_folds=1):
     pre_kl_pd = make_kl_df(kl_pd.name, data_mode=ABuEnv.EMarketDataSplitMode.E_DATA_SPLIT_SE, n_folds=n_folds,
                            end=end)
     # 再合并两段时间序列，pre_kl_pd[:-1]跳过重复的end
-    combine_kl = kl_pd if pre_kl_pd is None else pre_kl_pd[:-1].append(kl_pd)
+    combine_kl = kl_pd if pre_kl_pd is None else pd.concat([pre_kl_pd[:-1], kl_pd])
     # 根据combine_kl长度重新进行key计算
     combine_kl['key'] = list(range(0, len(combine_kl)))
     return combine_kl

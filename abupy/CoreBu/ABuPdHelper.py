@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import functools
-from collections import Iterable
+from collections.abc import Iterable
 
 import pandas as pd
 from ..CoreBu.ABuFixes import partial
@@ -34,7 +34,12 @@ try:
     from pandas.core.window import EWM
     g_pandas_has_ewm = True
 except ImportError:
-    g_pandas_has_ewm = False
+    try:
+        # pandas 2.x+ changed the import path
+        from pandas.core.window.ewm import ExponentialMovingWindow
+        g_pandas_has_ewm = True
+    except ImportError:
+        g_pandas_has_ewm = False
 
 try:
     # noinspection PyUnresolvedReferences
@@ -135,26 +140,78 @@ def _pd_ewm(pd_object, pd_object_cm, how, *args, **kwargs):
     :param how: 代表方法操作名称，eg. mean, std, var
     :return:
     """
-    if g_pandas_has_ewm:
-        """pandas版本高，使用如pd_object.ewm直接调用"""
+    how_original = how
+    
+    # 尝试使用新版本pandas的ewm API (pandas 1.0+)
+    # 在pandas 1.0+中，ewm().mean()等方法直接返回Series/DataFrame
+    try:
         ewm_obj = pd_object.ewm(*args, **kwargs)
         if hasattr(ewm_obj, how):
-            if pd_object_cm is None:
-                return getattr(ewm_obj, how)()
-            # 需要两个pd_object进行的操作
-            return getattr(ewm_obj, how)(pd_object_cm)
+            method = getattr(ewm_obj, how)
+            if callable(method):
+                if pd_object_cm is None:
+                    try:
+                        result = method()
+                        if result is not None:
+                            return result
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        result = method(pd_object_cm)
+                        if result is not None:
+                            return result
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+    
+    # 尝试使用旧版本pandas的ewm函数
+    # 在旧版本中，使用pd.ewmstd()这样的函数
+    how_for_old_api = how
+    if how == 'mean':
+        # pd.ewma特殊代表加权移动平均，所以使用a替换mean
+        how_for_old_api = 'a'
+    
+    # 对于corr和cov，旧版本pandas函数名不同
+    if how == 'corr':
+        how_func = 'ewmcorr'
+    elif how == 'cov':
+        how_func = 'ewmcov'
     else:
-        """pandas版本低，使用如pd.ewmstd方法调用"""
-        if how == 'mean':
-            # pd.ewma特殊代表加权移动平均，所以使用a替换mean
-            how = 'a'
-        how_func = 'ewm{}'.format(how)
-        if hasattr(pd, how_func):
-            if pd_object_cm is None:
-                return getattr(pd, how_func)(pd_object, *args, **kwargs)
-            # 需要两个pd_object进行的操作
-            return getattr(pd, how_func)(pd_object, pd_object_cm, *args, **kwargs)
-    raise RuntimeError('_pd_ewm {} getattr error'.format(how))
+        how_func = 'ewm{}'.format(how_for_old_api)
+    
+    if hasattr(pd, how_func):
+        try:
+            func = getattr(pd, how_func)
+            if callable(func):
+                if pd_object_cm is None:
+                    try:
+                        result = func(pd_object, *args, **kwargs)
+                        if result is not None:
+                            return result
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        result = func(pd_object, pd_object_cm, *args, **kwargs)
+                        if result is not None:
+                            return result
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+    
+    # 如果以上都失败，尝试最后的备选方案：使用简单的ewm mean计算
+    # 对于mean，可以直接使用 ewm().mean()
+    if how == 'mean' and pd_object_cm is None:
+        try:
+            return pd_object.ewm(*args, **kwargs).mean()
+        except Exception:
+            pass
+    
+    raise RuntimeError('_pd_ewm {} getattr error, tried both new and old pandas api, args={}, kwargs={}'.format(
+        how_original, args, kwargs))
 
 
 """没有全部导出，只导出常用的"""

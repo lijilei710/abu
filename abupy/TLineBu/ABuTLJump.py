@@ -170,7 +170,7 @@ def calc_jump(kl_pd, jump_diff_factor=1, show=True):
             # 计算出跳空缺口强度
             today['jump_power'] = (today.low - today.pre_close) / jump_diff
 
-            jump_pd = jump_pd.append(today)
+            jump_pd = pd.concat([jump_pd, today.to_frame().T])
         elif today.p_change < 0 and (today.pre_close - today.high) > jump_diff:
             # 注意向下跳空判断使用today.high，向下跳空 －1
             today['jump'] = -1
@@ -180,7 +180,7 @@ def calc_jump(kl_pd, jump_diff_factor=1, show=True):
             today['jump_diff'] = jump_diff
             # 计算出跳空缺口强度
             today['jump_power'] = (today.pre_close - today.high) / jump_diff
-            jump_pd = jump_pd.append(today)
+            jump_pd = pd.concat([jump_pd, today.to_frame().T])
 
     if show:
         # 通过plot_candle_form_klpd可视化跳空缺口，通过view_indexs参数

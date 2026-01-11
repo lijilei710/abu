@@ -837,7 +837,7 @@ class AbuUmpMainBase(AbuUmpBase):
         nts_pd = pd.DataFrame()
         for component_cluster in llps.index:
             # component_cluster eg:  '14-7', self.nts[component_cluster]即对应的pd.DataFrame对象
-            nts_pd = nts_pd.append(self.nts[component_cluster])
+            nts_pd = pd.concat([nts_pd, self.nts[component_cluster]])
             """
                 eg: self.nts字典中元素如下所示：
                 '14-7':
@@ -850,7 +850,7 @@ class AbuUmpMainBase(AbuUmpBase):
                 2016-04-15	0	    4.238	        -13.247	        4.693	        1.162	        54	7
             """
         """
-            所有的分类簇交易通过nts_pd.append(self.nts[component_cluster])组成必然有重复
+            所有的分类簇交易通过pd.concat([nts_pd, self.nts[component_cluster]])组成必然有重复
             在所有component_cluster中通过nts_pd.drop_duplicates去除重复的单子，注意使用'
             subset='ind'进行去重复，因为self.nts中的pd.DataFrame对象中cluster是不一样的
         """
@@ -1174,7 +1174,7 @@ class AbuUmpMainBase(AbuUmpBase):
         nts_pd = pd.DataFrame()
         for component_cluster in llps.index:
             # component_cluster eg:  '14-7', self.nts[component_cluster]即对应的pd.DataFrame对象
-            nts_pd = nts_pd.append(self.nts[component_cluster])
+            nts_pd = pd.concat([nts_pd, self.nts[component_cluster]])
             """
                 eg: self.nts字典中元素如下所示：
                 '14-7':

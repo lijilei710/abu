@@ -41,7 +41,7 @@ class AbuCapital(PickleStateMixin):
         # 根据基准时间序列，制作相同的时序资金对象capital_pd(pd.DcataFrame对象)
         self.capital_pd = pd.DataFrame(
             {
-                'cash_blance': np.NAN * kl_pd.shape[0],
+                'cash_blance': np.nan * kl_pd.shape[0],
                 'stocks_blance': np.zeros(kl_pd.shape[0]),
                 'atr21': kl_pd['atr21'],
                 'date': kl_pd['date']
@@ -76,23 +76,23 @@ class AbuCapital(PickleStateMixin):
         # 买涨持仓量
         call_keep = '_call_keep'
         if self.capital_pd.columns.tolist().count(a_symbol + call_keep) == 0:
-            self.capital_pd[a_symbol + call_keep] = np.NAN * \
+            self.capital_pd[a_symbol + call_keep] = np.nan * \
                                                     self.capital_pd.shape[0]
         # 买跌持仓量
         put_keep = '_put_keep'
         if self.capital_pd.columns.tolist().count(a_symbol + put_keep) == 0:
-            self.capital_pd[a_symbol + put_keep] = np.NAN * \
+            self.capital_pd[a_symbol + put_keep] = np.nan * \
                                                    self.capital_pd.shape[0]
         # 买涨总价值
         call_worth = '_call_worth'
         if self.capital_pd.columns.tolist().count(a_symbol + call_worth) == 0:
-            self.capital_pd[a_symbol + call_worth] = np.NAN * \
+            self.capital_pd[a_symbol + call_worth] = np.nan * \
                                                      self.capital_pd.shape[0]
 
         # 买跌总价值
         put_worth = '_put_worth'
         if self.capital_pd.columns.tolist().count(a_symbol + put_worth) == 0:
-            self.capital_pd[a_symbol + put_worth] = np.NAN * \
+            self.capital_pd[a_symbol + put_worth] = np.nan * \
                                                     self.capital_pd.shape[0]
 
     def apply_init_kl(self, action_pd, show_progress):
